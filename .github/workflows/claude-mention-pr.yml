@@ -1,0 +1,45 @@
+# LAB COPY of elastic/infra-party/.github/workflows/claude-mention-pr.yml (main, fetched 2026-11-25).
+# Only change: the repo-local "Setup dependencies" step (./.github/actions/setup-deps) is removed
+# because it does not exist in this lab repo. Trigger, gate, permissions, checkout and the
+# elastic/ai-github-actions rwxp action are identical.
+name: Claude Mention (PR)
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  respond:
+    if: >-
+      contains(github.event.comment.body, '@claude') &&
+      github.event.issue.pull_request != null &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout PR branch
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: gh pr checkout ${{ github.event.issue.number }}
+
+      - name: Run Claude Mention Handler
+        uses: elastic/ai-github-actions/workflows/mention-in-pr/rwxp@v0
+        with:
+          claude-oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github-token: ${{ github.token }}
