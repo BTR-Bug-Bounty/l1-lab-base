@@ -1,0 +1,1 @@
+Small typo fix (the visible change of the lab PR).
